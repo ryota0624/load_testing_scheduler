@@ -14,6 +14,7 @@ case class AggregateRunner(
   k8sClient: DefaultKubernetesClient
 ) {
   import com.github.mustachejava.{DefaultMustacheFactory, Mustache}
+
   import java.io.PrintWriter
 
   private def executeSequentially(ops: Seq[() => Future[Unit]])(
@@ -26,7 +27,7 @@ case class AggregateRunner(
     val cmdTemplate: Mustache = mf.compile(new StringReader(config.cmdTemplate), "cmd-template")
     val cmdSeq = config.variables.map(fillTemplate(cmdTemplate, _))
     val runLoadTestings =
-      cmdSeq.map(cmd => () => LoadTestingRunner.runShellCmd(config.testingTargetConfig)(cmd)(k8sClient, ctx))
+      cmdSeq.map(cmd => () => LoadTestingRunner.runShellCmd(???)(cmd)(k8sClient, ctx))
     executeSequentially(runLoadTestings)
   }
 
@@ -42,17 +43,23 @@ case class AggregateRunner(
   }
 }
 
+case class AggregateRunnerConfig(
+  cmdTemplate:         String,
+  variables:           Seq[Map[String, String]],
+  testingDuration:     Duration,
+  testingTargetConfig: TestingConfig
+)
+
 object AggregateRunner extends App {
+  type Config = AggregateRunnerConfig
+
+  def apply(config: Config): AggregateRunner = {
+    AggregateRunner(config, new DefaultKubernetesClient)
+  }
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  case class Config(
-    cmdTemplate:         String,
-    variables:           Seq[Map[String, String]],
-    testingDuration:     Duration,
-    testingTargetConfig: TestingConfig
-  )
-
-  val aggregateRunnerConfig = Config(
+  val aggregateRunnerConfig = AggregateRunnerConfig(
     cmdTemplate = "echo {{ name }}",
     variables = Seq(
       Map("name" -> "jon"),
@@ -61,6 +68,7 @@ object AggregateRunner extends App {
     testingTargetConfig = LoadTestingRunner.testingTargetConfig,
     testingDuration     = 10 seconds
   )
+
 
   val k8sClient = new DefaultKubernetesClient()
 
