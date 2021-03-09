@@ -95,7 +95,7 @@ def runCommand(command: String, message: => String, log: Logger) = {
 
 val root = (project in file("."))
   .settings(
-    name := "load_test_scheduler"
+    name := "load_testing_scheduler"
   )
   .aggregate(
     core,

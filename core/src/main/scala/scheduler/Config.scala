@@ -2,7 +2,7 @@ package scheduler
 
 import io.circe.generic.auto._
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.circe.{Decoder, Encoder, HCursor}
 
 sealed trait HookConfig {
   def `type`: String
