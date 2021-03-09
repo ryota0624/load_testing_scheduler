@@ -66,7 +66,7 @@ case class LoadTestingRunner(
 
 }
 
-object LoadTestingRunner /* extends App */ {
+object LoadTestingRunner {
 
   def apply(
     testingTargetConfig: TestingConfig,
@@ -85,10 +85,6 @@ object LoadTestingRunner /* extends App */ {
       pods:         Seq[Pod]
     )(implicit ctx: ExecutionContext): Future[Unit]
   }
-
-  import concurrent.ExecutionContext.Implicits.global
-
-//  implicit val k8sClient: DefaultKubernetesClient = new DefaultKubernetesClient()
 
   val testingTargetConfig = TestingConfig(
     TestingTarget(
@@ -110,7 +106,7 @@ object LoadTestingRunner /* extends App */ {
 
   def runShellCmd(config: TestingConfig)(
     cmd:                  String
-  )(implicit k8sClient:   KubernetesClient): Future[Unit] = {
+  )(implicit k8sClient:   KubernetesClient, ctx: ExecutionContext): Future[Unit] = {
     val hooks = config.hookConfigs.map(HookResolver.resolve(_, k8sClient))
     val scheduler = LoadTestingRunner(
       config,
