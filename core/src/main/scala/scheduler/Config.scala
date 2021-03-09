@@ -11,9 +11,13 @@ case class JFRHookConfig(
   distDir:            String
 ) extends HookConfig
 
-case class TestingTargetConfig(
+case class TestingTarget(
   namespace:      String,
   deploymentName: String,
-  podSelector:    (String, String),
-  hookConfigs:    Seq[HookConfig]
+  podSelector:    (String, String)
+)
+
+case class TestingConfig(
+  target:      TestingTarget,
+  hookConfigs: Seq[HookConfig]
 )
