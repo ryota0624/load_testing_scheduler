@@ -94,7 +94,7 @@ object LoadTestingRunner {
     ),
     hookConfigs = Seq(
       JFRHookConfig(
-        javaProcessName    = "api.SessionServer",
+        javaProcessName    = "api.server",
         javaContainerName  = "api-server",
         jfrTemplateSetting = None,
         recordingDuration  = "10s",

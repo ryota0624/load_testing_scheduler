@@ -1,5 +1,7 @@
 package scheduler
 
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Encoder, Json}
 import io.fabric8.kubernetes.client.DefaultKubernetesClient
 
 import java.io.{ByteArrayOutputStream, StringReader}
@@ -27,7 +29,7 @@ case class AggregateRunner(
     val cmdTemplate: Mustache = mf.compile(new StringReader(config.cmdTemplate), "cmd-template")
     val cmdSeq = config.variables.map(fillTemplate(cmdTemplate, _))
     val runLoadTestings =
-      cmdSeq.map(cmd => () => LoadTestingRunner.runShellCmd(???)(cmd)(k8sClient, ctx))
+      cmdSeq.map(cmd => () => LoadTestingRunner.runShellCmd(config.testingTargetConfig)(cmd)(k8sClient, ctx))
     executeSequentially(runLoadTestings)
   }
 
@@ -50,6 +52,11 @@ case class AggregateRunnerConfig(
   testingTargetConfig: TestingConfig
 )
 
+object AggregateRunnerConfig {
+  implicit val durationDec: Decoder[Duration] = _.as[String].map(Duration.apply)
+  implicit val durationEnd: Encoder[Duration] = (a: Duration) => Json.fromString(s"${a.toMillis} ms")
+}
+
 object AggregateRunner extends App {
   type Config = AggregateRunnerConfig
 
@@ -68,7 +75,12 @@ object AggregateRunner extends App {
     testingTargetConfig = LoadTestingRunner.testingTargetConfig,
     testingDuration     = 10 seconds
   )
+  import AggregateRunnerConfig._
+  import HookConfig._
+  import io.circe.generic.auto._
 
+
+  println(aggregateRunnerConfig.asJson.toString())
 
   val k8sClient = new DefaultKubernetesClient()
 

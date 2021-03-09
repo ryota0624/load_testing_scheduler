@@ -1,65 +1,38 @@
 package scheduler.cli
 
+import io.circe.generic.auto._
+import io.circe.parser.decode
 import picocli.CommandLine
 import picocli.CommandLine._
-import scheduler.{AggregateRunner, AggregateRunnerConfig, LoadTestingRunner}
-import scheduler.LoadTestingRunner.testingTargetConfig
+import scheduler.{AggregateRunner, AggregateRunnerConfig}
 
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.Callable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.Duration
 
 @Command(
-  name                     = "checksum",
+  name                     = "scheduler",
   mixinStandardHelpOptions = true,
-  version                  = Array("checksum 4.0"),
-  description              = Array("Prints the checksum (MD5 by default) of a file to STDOUT.")
+  version                  = Array("1.0"),
+  description              = Array("run command with deployment restart")
 )
 class Scheduler extends Callable[Int] {
+  import AggregateRunnerConfig._
 
   @Parameters(index = "0", description = Array("config file"))
   private var file: File = null
-  import io.circe.syntax._
 
   override def call(): Int = {
     val fileContents = Files.readAllBytes(file.toPath)
-    import io.circe.generic.auto._
-    import io.circe.parser.decode
-    import io.circe.syntax._
-    import io.circe.generic.auto._
-
-    val c = AggregateRunnerConfig(
-      cmdTemplate = "echo {{ name }}",
-      variables = Seq(
-        Map("name" -> "jon"),
-        Map("name" -> "mic")
-      ),
-      testingTargetConfig = LoadTestingRunner.testingTargetConfig,
-      testingDuration     = 10 seconds
-    ).asJson
-
-    println(c)
-
-    decode[AggregateRunner.Config](fileContents.toString) match {
-      case Left(value) =>
-        print(value)
+    decode[AggregateRunnerConfig](fileContents.toString) match {
+      case Left(error) =>
+        print(error)
         1
-      case Right(value) =>
-        val runF = AggregateRunner(
-          value
-          //      AggregateRunner.Config(
-          //        cmdTemplate = "echo {{ name }}",
-          //        variables = Seq(
-          //          Map("name" -> "jon"),
-          //          Map("name" -> "mic")
-          //        ),
-          //        testingTargetConfig = LoadTestingRunner.testingTargetConfig,
-          //        testingDuration     = 10 seconds
-          //      )
-        ).run()
+      case Right(config) =>
+        val runF = AggregateRunner(config).run()
         Await.result(runF, Duration.Inf)
         0
     }
